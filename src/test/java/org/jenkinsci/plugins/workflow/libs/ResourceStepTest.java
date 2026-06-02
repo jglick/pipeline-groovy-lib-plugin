@@ -216,7 +216,7 @@ public class ResourceStepTest {
 
         sampleRepo.init();
         sampleRepo.write("src/Stuff.groovy", "class Stuff {static def contents(script) {script.libraryResource 'poc.txt'}}");
-        Files.createSymbolicLink(Paths.get(sampleRepo.getRoot().getPath(), "resources"), secretsDir);
+        Files.createSymbolicLink(Paths.get(sampleRepo.getRoot().getPath(), "resources"), Paths.get("../../../../../../../secrets"));
 
         sampleRepo.git("add", "src", "resources");
         sampleRepo.git("commit", "--message=init");

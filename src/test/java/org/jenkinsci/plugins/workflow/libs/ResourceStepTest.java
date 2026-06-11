@@ -36,6 +36,7 @@ import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.Collections;
+import java.util.List;
 import jenkins.plugins.git.GitSCMSource;
 import jenkins.plugins.git.GitSampleRepoRule;
 import org.jenkinsci.plugins.workflow.cps.CpsFlowDefinition;
@@ -210,12 +211,8 @@ public class ResourceStepTest {
     @Issue("SECURITY-3727")
     @Test public void symlinkedLibraryResourcesDirectoryIsNotAllowedToEscapeWorkspaceContext() throws Exception {
         assumeFalse("Git symlink behavior is platform dependent on Windows", Functions.isWindows());
-        Path secretsDir = r.jenkins.getRootDir().toPath().resolve("secrets");
-        Files.createDirectories(secretsDir);
-        Files.write(secretsDir.resolve("poc.txt"), Arrays.asList("controller-secret-from-jenkins-home"), StandardCharsets.UTF_8);
-
         sampleRepo.init();
-        sampleRepo.write("src/Stuff.groovy", "class Stuff {static def contents(script) {script.libraryResource 'poc.txt'}}");
+        sampleRepo.write("src/Stuff.groovy", "class Stuff {static def contents(script) {script.libraryResource 'master.key'}}");
         Files.createSymbolicLink(Paths.get(sampleRepo.getRoot().getPath(), "resources"), Paths.get("../../../../../../../secrets"));
 
         sampleRepo.git("add", "src", "resources");
@@ -223,7 +220,7 @@ public class ResourceStepTest {
         for (boolean clone : new boolean[] {false, true}) {
             SCMSourceRetriever scm = new SCMSourceRetriever(new GitSCMSource(sampleRepo.toString()));
             scm.setClone(clone);
-            GlobalLibraries.get().setLibraries(Collections.singletonList(
+            GlobalLibraries.get().setLibraries(List.of(
                 new LibraryConfiguration("symlink-root-stuff", scm)));
             WorkflowJob p = r.jenkins.createProject(WorkflowJob.class, "p" + clone);
             p.setDefinition(new CpsFlowDefinition("@Library('symlink-root-stuff@master') import Stuff; echo(Stuff.contents(this))", true));
